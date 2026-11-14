@@ -1,10 +1,20 @@
+# Dependencies and build output
 node_modules/
 dist/
 web/dist/
 server/dist/
 coverage/
-.env
-.env.local
-*.log
-.DS_Store
 *.tsbuildinfo
+
+# Local environment. .env.example is the template and stays in git.
+.env
+.env.*
+!.env.example
+*.log
+
+# Editor and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

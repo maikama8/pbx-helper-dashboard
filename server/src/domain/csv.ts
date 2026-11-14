@@ -23,6 +23,7 @@ function cell(value: string | number): string {
   return text;
 }
 
+/** CSV for a CDR page. A field that contains a comma, quote, or newline is quoted. */
 export function cdrToCsv(rows: readonly Cdr[]): string {
   const lines = [COLUMNS.join(",")];
   for (const row of rows) {

@@ -17,6 +17,7 @@ export function overlayTrunks(inventory: readonly Trunk[], observed: readonly Tr
   });
 }
 
+/** AMI peer status wins. An extension AMI reports and inventory does not know is kept. */
 export function overlayExtensions(inventory: readonly Extension[], observed: readonly Extension[]): Extension[] {
   if (inventory.length === 0) return [...observed];
   const extras = observed.filter(

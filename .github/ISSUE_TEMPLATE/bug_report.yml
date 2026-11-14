@@ -1,0 +1,36 @@
+name: Bug report
+description: Something in Span does not match the documented behaviour.
+title: "bug: "
+labels: []
+body:
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - demo
+        - live
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit, tag, or image.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what Span did instead. Redact passwords, API secrets, and caller numbers that are not yours to share.
+    validations:
+      required: true
+  - type: textarea
+    id: connectors
+    attributes:
+      label: Connectors in use
+      description: AMI, ARI, MagnusBilling, FreePBX, CDR MySQL. Say which ones were configured. Do not paste secrets.
+    validations:
+      required: false

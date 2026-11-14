@@ -40,6 +40,7 @@ export interface PricedCall {
   buy: number;
 }
 
+/** Price one dialed number. An extension is Internal and free. An unknown prefix is free and labelled Unknown. */
 export function priceCall(
   dst: string,
   billsec: number,

@@ -7,6 +7,7 @@ export function parseAmount(input: unknown): number | null {
   return cents / 100;
 }
 
+/** A refill note, 1-80 characters, with no control characters. */
 export function parseDescription(input: unknown): string | null {
   if (typeof input !== "string") return null;
   const text = input.trim();
@@ -23,6 +24,7 @@ function hasControl(value: string): boolean {
   return false;
 }
 
+/** An integer inside `[min, max]`, or `fallback` when the input is not a finite number. */
 export function clampInt(input: unknown, fallback: number, min: number, max: number): number {
   const value = typeof input === "string" ? Number(input) : typeof input === "number" ? input : fallback;
   if (!Number.isFinite(value)) return fallback;

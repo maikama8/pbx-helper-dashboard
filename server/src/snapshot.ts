@@ -28,6 +28,7 @@ export interface Snapshot {
   queues: QueueStat[];
 }
 
+/** Today's analytics, plus live calls, trunk registration, queues, and low balances. */
 export function buildOverview(connector: TelephonyConnector, config: Config): Overview {
   const today = dayKey(connector.now().toISOString(), config.timezone);
   const cdrs = filterCdrs(connector.getCdrs(), { from: today, to: today }, config.timezone);
@@ -51,6 +52,7 @@ export function buildOverview(connector: TelephonyConnector, config: Config): Ov
   };
 }
 
+/** The document served by `GET /api/snapshot` and pushed on the WebSocket. */
 export function buildSnapshot(connector: TelephonyConnector, config: Config): Snapshot {
   return {
     type: "snapshot",

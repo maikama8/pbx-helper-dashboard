@@ -21,7 +21,7 @@ describe("demo connector", () => {
 
   it("answers the ringing call when the roll is low", () => {
     const demo = connector();
-    demo.debugStep(0.1);
+    demo.step(0.1);
     const inbound = demo.getCalls().find((call) => call.id === "call-in-2001");
     expect(inbound?.state).toBe("up");
     expect(inbound?.answeredAt).toBe(FROZEN.toISOString());
@@ -49,6 +49,16 @@ describe("demo connector", () => {
     if (result.ok) expect(result.value.credit).toBe(11.2);
     expect(demo.getRefills()[0]).toMatchObject({ customerId: "2", amount: 10, by: "admin" });
     expect(before?.credit).toBe(1.2);
+  });
+
+  it("originates when the floor has room and clears a lagged trunk on a rare roll", () => {
+    const busy = connector();
+    busy.step(0.7);
+    expect(busy.getCalls()).toHaveLength(5);
+
+    const quiet = connector();
+    quiet.step(0.99);
+    expect(quiet.getTrunks().find((trunk) => trunk.id === "didww-eu")?.status).toBe("registered");
   });
 
   it("draws the same first value from a seed", async () => {

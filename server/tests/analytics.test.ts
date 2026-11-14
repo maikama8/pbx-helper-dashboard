@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { analyze, answerSeizureRatio, averageCallDuration, filterCdrs } from "../src/domain/analytics.js";
 import { cdrToCsv } from "../src/domain/csv.js";
 import { matchRate, mulRate, priceCall } from "../src/domain/rating.js";
-import { parseAmount } from "../src/domain/validate.js";
+import { clampInt, parseAmount, parseDescription } from "../src/domain/validate.js";
 import { demoCdrs, demoExtensions, DEMO_RATES } from "../src/connectors/demo/opening.js";
 import { FROZEN } from "./helpers.js";
 
@@ -30,7 +30,7 @@ describe("rating", () => {
 });
 
 describe("opening day analytics", () => {
-  const cdrs = demoCdrs(FROZEN, "UTC", demoExtensions(FROZEN));
+  const cdrs = demoCdrs(FROZEN, "UTC", demoExtensions());
   const view = analyze(cdrs, "UTC");
 
   it("computes ASR and ACD for the seeded day", () => {
@@ -71,6 +71,13 @@ describe("opening day analytics", () => {
     expect(filterCdrs(cdrs, { destination: "ghana" }, "UTC").length).toBe(3);
   });
 
+  it("uses the civil day in the dashboard timezone", () => {
+    const shifted = { ...cdrs[0], calldate: "2026-11-15T02:30:00.000Z" };
+    expect(filterCdrs([shifted], { from: "2026-11-14", to: "2026-11-14" }, "America/New_York")).toHaveLength(1);
+    expect(filterCdrs([shifted], { from: "2026-11-15", to: "2026-11-15" }, "UTC")).toHaveLength(1);
+    expect(filterCdrs([shifted], { from: "2026-11-14", to: "2026-11-14" }, "UTC")).toHaveLength(0);
+  });
+
   it("exports a CSV with a margin column and quoted destinations", () => {
     const csv = cdrToCsv(cdrs);
     expect(csv.split("\n")[0]).toBe("calldate,src,dst,destination,disposition,duration,billsec,account,trunk,sell,buy,margin,uniqueid");
@@ -79,12 +86,22 @@ describe("opening day analytics", () => {
   });
 });
 
-describe("parseAmount", () => {
+describe("validation", () => {
   it("accepts cents and rejects a third decimal place", () => {
     expect(parseAmount(10.2)).toBe(10.2);
     expect(parseAmount("0.01")).toBe(0.01);
     expect(parseAmount(0)).toBeNull();
     expect(parseAmount(10.222)).toBeNull();
     expect(parseAmount(-5)).toBeNull();
+  });
+
+  it("trims a refill note and rejects control characters and a page size outside the range", () => {
+    expect(parseDescription(" cash desk ")).toBe("cash desk");
+    expect(parseDescription("")).toBeNull();
+    expect(parseDescription("a".repeat(81))).toBeNull();
+    expect(parseDescription("line\nbreak")).toBeNull();
+    expect(clampInt("40", 50, 1, 500)).toBe(40);
+    expect(clampInt("nope", 50, 1, 500)).toBe(50);
+    expect(clampInt("900", 50, 1, 500)).toBe(500);
   });
 });

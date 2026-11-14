@@ -7,6 +7,16 @@ export class ApiError extends Error {
   }
 }
 
+function messageFrom(text: string, fallback: string): string {
+  if (!text) return fallback;
+  try {
+    const body = JSON.parse(text) as { message?: unknown };
+    return typeof body.message === "string" && body.message ? body.message : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (init?.body && !headers.has("content-type")) headers.set("content-type", "application/json");
@@ -18,7 +28,11 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError("Sign in.", 401);
   }
   const text = await response.text();
-  const body = text ? (JSON.parse(text) as { message?: string }) : {};
-  if (!response.ok) throw new ApiError(body.message || response.statusText, response.status);
-  return body as T;
+  if (!response.ok) throw new ApiError(messageFrom(text, response.statusText || "Request failed."), response.status);
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new ApiError("The server returned a response that was not JSON.", response.status);
+  }
 }

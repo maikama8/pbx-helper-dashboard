@@ -22,7 +22,8 @@ export const DEMO_RATES: Rate[] = [
   { id: "ae", prefix: "971", destination: "United Arab Emirates", buyRate: 0.03, sellRate: 0.07, minLength: 11 },
 ];
 
-export function demoExtensions(now: Date): Extension[] {
+/** FreePBX extensions and Magnus SIP users on the opening floor. */
+export function demoExtensions(): Extension[] {
   return [
     ext("1001", "Adaeze Okonkwo", "pjsip", "from-internal", "Adaeze <1001>", "night-desk", "online", "203.0.113.21", "Linphone 5.2", "ulaw", "freepbx"),
     ext("1002", "Jonas Berg", "pjsip", "from-internal", "Jonas <1002>", "atlas-freight", "busy", "203.0.113.34", "Grandstream GXP2170", "ulaw", "freepbx"),
@@ -64,7 +65,6 @@ export function demoExtensions(now: Date): Extension[] {
       source,
     };
   }
-  void now;
 }
 
 export function demoTrunks(now: Date): Trunk[] {
@@ -360,7 +360,7 @@ export interface DemoData {
 }
 
 export function openingState(now: Date, timeZone: string): DemoData {
-  const extensions = demoExtensions(now);
+  const extensions = demoExtensions();
   const customers = demoCustomers(now);
   return {
     calls: demoCalls(now),

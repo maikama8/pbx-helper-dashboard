@@ -1,5 +1,5 @@
 import type { Analytics, Cdr, DestinationStat, Disposition, HourBucket } from "./types.js";
-import { hourInZone } from "./time.js";
+import { dayKey, hourInZone } from "./time.js";
 import { round1, round2, round6 } from "./rating.js";
 
 const ANSWERED: Disposition = "ANSWERED";
@@ -27,6 +27,7 @@ export function averageCallDuration(cdrs: readonly Cdr[]): number | null {
   return round1(total / answered.length);
 }
 
+/** Answered and missed attempts grouped by the hour in `timeZone`. Empty hours are omitted. */
 export function callsPerHour(cdrs: readonly Cdr[], timeZone: string): HourBucket[] {
   const buckets = new Map<number, HourBucket>();
   for (const cdr of cdrs) {
@@ -39,6 +40,7 @@ export function callsPerHour(cdrs: readonly Cdr[], timeZone: string): HourBucket
   return [...buckets.values()].sort((a, b) => a.hour - b.hour);
 }
 
+/** Destinations ranked by answered minutes. Internal calls are left out of the table. */
 export function topDestinations(cdrs: readonly Cdr[], limit = 6): DestinationStat[] {
   const byName = new Map<string, DestinationStat>();
   for (const cdr of cdrs) {
@@ -69,6 +71,7 @@ export function topDestinations(cdrs: readonly Cdr[], limit = 6): DestinationSta
     .slice(0, limit);
 }
 
+/** ASR, ACD, money, the hour chart, and the destination table for one set of CDRs. */
 export function analyze(cdrs: readonly Cdr[], timeZone: string): Analytics {
   const answered = cdrs.filter(isAnswered);
   const billsec = answered.reduce((sum, cdr) => sum + cdr.billsec, 0);
@@ -91,27 +94,21 @@ export function analyze(cdrs: readonly Cdr[], timeZone: string): Analytics {
 }
 
 export interface CdrFilter {
+  /** Inclusive civil days, `YYYY-MM-DD`, in the dashboard timezone. */
   from?: string;
   to?: string;
   account?: string;
-  disposition?: string;
+  disposition?: Disposition;
+  /** Case-insensitive match on the rated destination name. */
   destination?: string;
+  /** Case-insensitive match on source, destination number, account, or uniqueid. */
   q?: string;
 }
 
+/** Keep rows whose civil day, account, disposition, destination, and search needle all match. */
 export function filterCdrs(cdrs: readonly Cdr[], filter: CdrFilter, timeZone: string): Cdr[] {
-  const dayOf = (iso: string) => {
-    const date = new Date(iso);
-    const fmt = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-    return fmt.format(date);
-  };
   return cdrs.filter((cdr) => {
-    const day = dayOf(cdr.calldate);
+    const day = dayKey(cdr.calldate, timeZone);
     if (filter.from && day < filter.from) return false;
     if (filter.to && day > filter.to) return false;
     if (filter.account && cdr.account !== filter.account) return false;

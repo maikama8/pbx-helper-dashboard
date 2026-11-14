@@ -1,3 +1,5 @@
+/** Process entry: load config, start the connector, serve the API and the built UI. */
+
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { loadConfig, loadEnvFile, repoRoot, usingDemoSecrets } from "./config.js";

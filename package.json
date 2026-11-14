@@ -1,10 +1,18 @@
 {
   "name": "pbx-helper-dashboard",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Span: a helper dashboard for MagnusBilling and FreePBX/Asterisk",
   "license": "MIT",
   "author": "Abdulrasheed Oseni (https://github.com/maikama8)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikama8/pbx-helper-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maikama8/pbx-helper-dashboard/issues"
+  },
+  "homepage": "https://github.com/maikama8/pbx-helper-dashboard#readme",
   "type": "module",
   "workspaces": [
     "server",

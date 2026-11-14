@@ -1,13 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLive } from "../lib/live.js";
-import { PageHead, Panel, Pill } from "../components/ui.js";
-
-function tone(status: string): "ok" | "warn" | "bad" | "muted" {
-  if (status === "online") return "ok";
-  if (status === "busy") return "warn";
-  if (status === "offline") return "bad";
-  return "muted";
-}
+import { EmptyRow, extensionTone, Loading, PageHead, Panel, Pill } from "../components/ui.js";
 
 export function Extensions() {
   const { snap } = useLive();
@@ -40,6 +33,9 @@ export function Extensions() {
           </select>
         </label>
       </div>
+      {!snap ? (
+        <Loading label="Loading extensions…" />
+      ) : (
       <Panel>
         <div className="table-wrap">
           <table className="data">
@@ -63,7 +59,7 @@ export function Extensions() {
                     <div className="text-sm text-[var(--muted)]">{row.userAgent || row.technology}</div>
                   </td>
                   <td>
-                    <Pill tone={tone(row.status)}>{row.status}</Pill>
+                    <Pill tone={extensionTone(row.status)}>{row.status}</Pill>
                   </td>
                   <td>{row.account ?? "—"}</td>
                   <td className="num">{row.address ?? "—"}</td>
@@ -71,10 +67,12 @@ export function Extensions() {
                   <td className="capitalize">{row.source}</td>
                 </tr>
               ))}
+              {rows.length === 0 ? <EmptyRow cols={7}>No extensions match this filter.</EmptyRow> : null}
             </tbody>
           </table>
         </div>
       </Panel>
+      )}
     </div>
   );
 }

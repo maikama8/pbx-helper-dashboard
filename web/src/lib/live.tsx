@@ -34,8 +34,12 @@ export function LiveProvider({ me, children }: { me: Me; children: ReactNode }) 
         if (!stop) retry = setTimeout(connect, 1500);
       };
       socket.onmessage = (event) => {
-        const message = JSON.parse(String(event.data)) as Snapshot;
-        if (message.type === "snapshot") setSnap(message);
+        try {
+          const message = JSON.parse(String(event.data)) as Snapshot;
+          if (message.type === "snapshot") setSnap(message);
+        } catch {
+          // A frame that is not a snapshot is ignored. The next one replaces it.
+        }
       };
     };
     connect();

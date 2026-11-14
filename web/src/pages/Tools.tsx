@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ApiError, api } from "../lib/api.js";
-import { PageHead, Panel } from "../components/ui.js";
+import { Loading, PageHead, Panel } from "../components/ui.js";
 
 interface Provider {
   id: string;
@@ -59,7 +59,7 @@ export function Tools() {
 }
 
 function SipTool() {
-  const [providers, setProviders] = useState<Provider[]>([]);
+  const [providers, setProviders] = useState<Provider[] | null>(null);
   const [provider, setProvider] = useState("telnyx");
   const [format, setFormat] = useState("pjsip");
   const [name, setName] = useState("telnyx-us");
@@ -69,14 +69,15 @@ function SipTool() {
   const [text, setText] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     api<{ providers: Provider[] }>("/api/tools/providers")
       .then((payload) => setProviders(payload.providers))
-      .catch(() => undefined);
+      .catch((err: unknown) => setLoadError(err instanceof ApiError ? err.message : "Could not load providers."));
   }, []);
 
-  const preset = providers.find((row) => row.id === provider);
+  const preset = providers?.find((row) => row.id === provider);
 
   async function generate() {
     setError("");
@@ -91,6 +92,9 @@ function SipTool() {
       setError(err instanceof ApiError ? err.message : "Could not build the snippet.");
     }
   }
+
+  if (loadError) return <p className="text-sm text-[var(--danger)]">{loadError}</p>;
+  if (!providers) return <Loading label="Loading providers…" />;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -209,12 +213,16 @@ function DialplanTool() {
 }
 
 function Checklist() {
-  const [items, setItems] = useState<CheckItem[]>([]);
+  const [items, setItems] = useState<CheckItem[] | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
     api<{ items: CheckItem[] }>("/api/tools/checklist")
       .then((payload) => setItems(payload.items))
-      .catch(() => undefined);
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Could not load the checklist."));
   }, []);
+  if (error) return <p className="text-sm text-[var(--danger)]">{error}</p>;
+  if (!items) return <Loading label="Loading the checklist…" />;
+  if (items.length === 0) return <p className="text-sm text-[var(--muted)]">Nothing on the checklist.</p>;
   return (
     <div className="space-y-3">
       {items.map((item) => (
@@ -230,12 +238,16 @@ function Checklist() {
 }
 
 function NatTips() {
-  const [tips, setTips] = useState<Tip[]>([]);
+  const [tips, setTips] = useState<Tip[] | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
     api<{ tips: Tip[] }>("/api/tools/nat")
       .then((payload) => setTips(payload.tips))
-      .catch(() => undefined);
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Could not load the notes."));
   }, []);
+  if (error) return <p className="text-sm text-[var(--danger)]">{error}</p>;
+  if (!tips) return <Loading label="Loading notes…" />;
+  if (tips.length === 0) return <p className="text-sm text-[var(--muted)]">No notes yet.</p>;
   return (
     <div className="space-y-3">
       {tips.map((tip) => (
