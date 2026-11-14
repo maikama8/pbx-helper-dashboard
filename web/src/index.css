@@ -48,10 +48,12 @@ html,
 body,
 #root {
   min-height: 100%;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background-color: var(--bg);
   background-image:
@@ -83,6 +85,8 @@ textarea:focus-visible {
 }
 
 .panel {
+  min-width: 0;
+  max-width: 100%;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -185,6 +189,7 @@ html:not(.dark) .btn-primary {
 .st-muted { color: var(--muted); background: var(--surface-2); }
 
 .table-wrap {
+  max-width: 100%;
   overflow-x: auto;
 }
 

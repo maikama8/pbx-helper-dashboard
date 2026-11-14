@@ -11,6 +11,7 @@ const DIGITS = /^\d{2,16}$/;
 const PREFIX = /^\d{1,16}$/;
 const NAME = /^[A-Za-z0-9_.-]{1,64}$/;
 
+/** A custom inbound and outbound context. Digit and token checks stop a value from closing the section. */
 export function renderDialplan(input: DialplanInput): string {
   if (!DIGITS.test(input.did)) throw new Error("DID must be 2-16 digits");
   if (!DIGITS.test(input.extension)) throw new Error("Extension must be 2-16 digits");

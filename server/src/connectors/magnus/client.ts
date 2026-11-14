@@ -86,6 +86,7 @@ function dispositionOf(row: MagnusRow, billsec: number): Disposition {
   return billsec > 0 ? "ANSWERED" : "NO ANSWER";
 }
 
+/** Signed MagnusBilling REST client. The API secret is the HMAC key and is never sent. */
 export class MagnusClient {
   constructor(
     private readonly config: MagnusConfig,

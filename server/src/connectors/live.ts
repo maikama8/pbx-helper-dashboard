@@ -21,6 +21,11 @@ export interface LiveDeps {
   loadCdr?: typeof loadMysqlCdr;
 }
 
+/**
+ * Live board. AMI owns channels and registration. Magnus owns customers, rates, and priced CDRs.
+ * FreePBX supplies inventory. MySQL supplies CEL, and CDRs when Magnus is absent.
+ * A connector that fails keeps the last good rows and records a warning.
+ */
 export class LiveConnector implements TelephonyConnector {
   readonly source = "live" as const;
   private amiState: AmiState = emptyAmiState();
@@ -131,7 +136,7 @@ export class LiveConnector implements TelephonyConnector {
     return this.cel;
   }
 
-  async hangup(id: string): Promise<ActionResult<{ id: string }>> {
+  async hangup(id: string, _actor: string): Promise<ActionResult<{ id: string }>> {
     const call = this.getCalls().find((row) => row.id === id);
     if (!call) return { ok: false, status: 404, message: "That call is no longer up." };
     const errors: string[] = [];

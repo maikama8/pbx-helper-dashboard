@@ -7,6 +7,7 @@ import type { Config } from "./config.js";
 import type { TelephonyConnector } from "./connectors/types.js";
 import { analyze, filterCdrs, type CdrFilter } from "./domain/analytics.js";
 import { cdrToCsv } from "./domain/csv.js";
+import type { Disposition } from "./domain/types.js";
 import { clampInt, parseAmount, parseDescription } from "./domain/validate.js";
 import { buildOverview, buildSnapshot } from "./snapshot.js";
 import { securityChecklist } from "./tools/checklist.js";
@@ -26,7 +27,7 @@ export interface AppOptions {
   logger?: boolean | object;
 }
 
-const DISPOSITIONS = new Set(["ANSWERED", "NO ANSWER", "BUSY", "FAILED", "CONGESTION"]);
+const DISPOSITIONS = new Set<Disposition>(["ANSWERED", "NO ANSWER", "BUSY", "FAILED", "CONGESTION"]);
 
 function queryFilter(query: Record<string, unknown>): CdrFilter {
   const disposition = typeof query.disposition === "string" ? query.disposition : undefined;
@@ -34,7 +35,7 @@ function queryFilter(query: Record<string, unknown>): CdrFilter {
     from: typeof query.from === "string" && /^\d{4}-\d{2}-\d{2}$/.test(query.from) ? query.from : undefined,
     to: typeof query.to === "string" && /^\d{4}-\d{2}-\d{2}$/.test(query.to) ? query.to : undefined,
     account: typeof query.account === "string" && query.account ? query.account : undefined,
-    disposition: disposition && DISPOSITIONS.has(disposition) ? disposition : undefined,
+    disposition: disposition && DISPOSITIONS.has(disposition as Disposition) ? (disposition as Disposition) : undefined,
     destination: typeof query.destination === "string" && query.destination ? query.destination : undefined,
     q: typeof query.q === "string" && query.q ? query.q : undefined,
   };
@@ -58,6 +59,10 @@ function requireAdmin(request: FastifyRequest, reply: FastifyReply): Session | n
   return session;
 }
 
+/**
+ * HTTP application: session cookie, JSON API, snapshot socket, and the built UI.
+ * Health and login are public. Mutations require the admin role.
+ */
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const { config, connector } = options;
   const app = Fastify({
@@ -110,7 +115,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return { username: session.sub, role: session.role };
   });
 
-  app.post("/api/logout", async (request, reply) => {
+  app.post("/api/logout", async (_request, reply) => {
     clearSession(reply, config);
     return { ok: true };
   });

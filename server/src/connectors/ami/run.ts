@@ -66,7 +66,7 @@ async function runOnce(options: AmiRunOptions): Promise<void> {
   }
 }
 
-/** Reconnect until aborted. The first connection attempt is awaited by the caller of `startAmi`. */
+/** Keep one AMI session until `signal` aborts, and open another after `reconnectMs`. */
 export async function runAmi(options: AmiRunOptions): Promise<void> {
   while (!options.signal.aborted) {
     try {
@@ -81,10 +81,28 @@ export async function runAmi(options: AmiRunOptions): Promise<void> {
       });
     }
     if (options.signal.aborted) return;
-    await new Promise((resolve) => setTimeout(resolve, options.config.reconnectMs));
+    await sleep(options.config.reconnectMs, options.signal);
   }
 }
 
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const onAbort = () => finish();
+    const timer = setTimeout(finish, ms);
+    function finish() {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/** `Action: Hangup` with cause 16, normal clearing. Throws when Asterisk returns an error. */
 export async function amiHangup(session: AmiSession, channel: string): Promise<void> {
   const messages = await session.request(
     { Action: "Hangup", Channel: channel, Cause: "16" },

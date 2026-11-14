@@ -110,6 +110,7 @@ export const DEMO_ADMIN_PASSWORD = "span-demo-admin";
 export const DEMO_VIEWER_PASSWORD = "span-demo-viewer";
 export const DEMO_SESSION_SECRET = "span-dev-secret-change-me";
 
+/** Demo passwords and the demo session secret still in use. Logged at boot, refused for live production. */
 export function usingDemoSecrets(config: Config): string[] {
   const notes: string[] = [];
   if (config.adminPassword === DEMO_ADMIN_PASSWORD) notes.push("ADMIN_PASSWORD is the demo value");
@@ -118,6 +119,7 @@ export function usingDemoSecrets(config: Config): string[] {
   return notes;
 }
 
+/** Read process environment into a config object. Call `loadEnvFile` first if a `.env` file should apply. */
 export function loadConfig(env: NodeJS.ProcessEnv): Config {
   const source = required(env, "SOURCE", "demo");
   if (source !== "demo" && source !== "live") {

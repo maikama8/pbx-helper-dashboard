@@ -30,7 +30,14 @@ export function Shell() {
   }, [navigate]);
 
   if (!me) {
-    return <div className="p-10 text-[var(--muted)]">{failed ? "Redirecting to sign in…" : "Opening the switch…"}</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="text-center">
+          <div className="font-serif text-4xl italic leading-none">Span</div>
+          <p className="mt-3 text-sm text-[var(--muted)]">{failed ? "Redirecting to sign in…" : "Opening the switch…"}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -59,7 +66,7 @@ function Frame() {
             <div className="kicker mt-1">PBX helper</div>
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-1 md:flex-col md:overflow-visible">
+        <nav className="flex max-w-full gap-1 overflow-x-auto px-3 pb-3 md:flex-1 md:flex-col md:overflow-visible">
           {NAV.map(([to, label]) => (
             <NavLink
               key={to}
@@ -87,7 +94,7 @@ function Frame() {
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
           <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
             <span className={connected ? "live-dot" : "inline-block h-2 w-2 rounded-full bg-[var(--muted)]"} />
-            <span>{snap?.source === "live" ? "Live connectors" : "Demo floor"}</span>
+            <span>{connected ? (snap?.source === "live" ? "Live connectors" : "Demo floor") : "Reconnecting"}</span>
             <span>·</span>
             <span className="num">{snap?.timezone ?? "UTC"}</span>
             {me.role === "viewer" ? <span className="pill st-muted">Read only</span> : null}

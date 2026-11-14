@@ -47,6 +47,16 @@ export function useNow(ms = 1000): number {
   return now;
 }
 
+/** Civil date in an IANA zone, `YYYY-MM-DD`, matching the CDR filter. */
+export function civilDay(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
 export function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }

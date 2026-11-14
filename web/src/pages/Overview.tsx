@@ -1,18 +1,11 @@
 import { acd, hourLabel, money, pct } from "../lib/format.js";
 import { useLive } from "../lib/live.js";
-import { Banner, Kpi, PageHead, Panel, Pill } from "../components/ui.js";
-
-function tone(status: string): "ok" | "warn" | "bad" | "muted" {
-  if (status === "registered") return "ok";
-  if (status === "lagged") return "warn";
-  if (status === "rejected") return "bad";
-  return "muted";
-}
+import { Banner, Kpi, Loading, PageHead, Panel, Pill, trunkTone } from "../components/ui.js";
 
 export function Overview() {
   const { snap } = useLive();
   const view = snap?.overview;
-  if (!view) return <p className="text-[var(--muted)]">Loading the floor…</p>;
+  if (!view) return <Loading label="Loading the floor…" />;
   const max = Math.max(1, ...view.callsPerHour.map((row) => row.answered + row.missed));
 
   return (
@@ -40,6 +33,9 @@ export function Overview() {
       <div className="mt-4 grid gap-4 xl:grid-cols-5">
         <Panel className="p-4 xl:col-span-3">
           <div className="kicker">Calls per hour</div>
+          {view.callsPerHour.length === 0 ? (
+            <p className="mt-6 text-sm text-[var(--muted)]">No attempts in this window.</p>
+          ) : (
           <div className="mt-4 flex h-44 items-end gap-1.5">
             {view.callsPerHour.map((row) => {
               const answered = (row.answered / max) * 100;
@@ -55,13 +51,19 @@ export function Overview() {
               );
             })}
           </div>
+          )}
+          {view.callsPerHour.length > 0 ? (
           <div className="mt-2 flex gap-4 text-sm text-[var(--muted)]">
             <span>Copper is answered</span>
             <span>Red is missed</span>
           </div>
+          ) : null}
         </Panel>
         <Panel className="p-4 xl:col-span-2">
           <div className="kicker">Trunk health</div>
+          {(snap?.trunks ?? []).length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--muted)]">No trunks are configured.</p>
+          ) : (
           <ul className="mt-3 space-y-3">
             {(snap?.trunks ?? []).map((trunk) => (
               <li key={trunk.id} className="flex items-center justify-between gap-3">
@@ -71,16 +73,20 @@ export function Overview() {
                     {trunk.channelsInUse}/{trunk.maxChannels || "–"} · {trunk.rttMs === null ? "no qualify" : `${trunk.rttMs} ms`}
                   </div>
                 </div>
-                <Pill tone={tone(trunk.status)}>{trunk.status}</Pill>
+                <Pill tone={trunkTone(trunk.status)}>{trunk.status}</Pill>
               </li>
             ))}
           </ul>
+          )}
         </Panel>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Panel className="p-4 lg:col-span-2">
           <div className="kicker">Top destinations</div>
+          {view.topDestinations.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--muted)]">No destinations yet.</p>
+          ) : (
           <div className="table-wrap mt-2">
             <table className="data">
               <thead>
@@ -105,10 +111,14 @@ export function Overview() {
               </tbody>
             </table>
           </div>
+          )}
         </Panel>
         <div className="space-y-4">
           <Panel className="p-4">
             <div className="kicker">Queues</div>
+            {view.queues.length === 0 ? (
+              <p className="mt-3 text-sm text-[var(--muted)]">No queues reported.</p>
+            ) : (
             <ul className="mt-3 space-y-3">
               {view.queues.map((queue) => (
                 <li key={queue.name}>
@@ -122,6 +132,7 @@ export function Overview() {
                 </li>
               ))}
             </ul>
+            )}
           </Panel>
           <Panel className="p-4">
             <div className="kicker">Low balance</div>

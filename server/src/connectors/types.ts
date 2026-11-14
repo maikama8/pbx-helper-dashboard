@@ -2,6 +2,10 @@ import type { Cdr, CelEvent, Customer, Extension, LiveCall, QueueStat, Rate, Ref
 
 export type ActionResult<T> = { ok: true; value: T } | { ok: false; status: number; message: string };
 
+/**
+ * What the board can ask of a switch and a billing system.
+ * Demo and live both implement this. Routes never branch on which one is running.
+ */
 export interface TelephonyConnector {
   readonly source: "demo" | "live";
   start(): Promise<void>;
@@ -19,6 +23,8 @@ export interface TelephonyConnector {
   getRates(): Rate[];
   getCdrs(): Cdr[];
   getCel(): CelEvent[];
+  /** End the channel. 404 when it is already gone. */
   hangup(id: string, actor: string): Promise<ActionResult<{ id: string }>>;
+  /** Add credit. Live mode posts MagnusBilling `refill/save` and re-reads the customer. */
   refill(id: string, amount: number, description: string, actor: string): Promise<ActionResult<Customer>>;
 }

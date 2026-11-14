@@ -4,6 +4,7 @@ export interface Tip {
   lookAt: string[];
 }
 
+/** Notes for one-way audio, a 30-second teardown, codecs, and qualify flaps. Text only. */
 export function natAndCodecTips(): Tip[] {
   return [
     {
