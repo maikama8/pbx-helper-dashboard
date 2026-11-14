@@ -1,3 +1,5 @@
+/** Rows the board and the connectors share. Vendor payloads are mapped into these shapes. */
+
 export type Role = "admin" | "viewer";
 
 export type CallState = "ringing" | "up" | "dialing";

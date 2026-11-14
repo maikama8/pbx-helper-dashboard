@@ -19,6 +19,16 @@ describe("config", () => {
     expect(() => loadConfig({ SOURCE: "live" })).toThrow(/at least one/);
     expect(() => loadConfig({ TIMEZONE: "Mars/Olympus" })).toThrow(/TIMEZONE/);
     expect(() => loadConfig({ SOURCE: "live", AMI_HOST: "127.0.0.1" })).toThrow(/AMI_SECRET/);
+    expect(() => loadConfig({ ADMIN_USERNAME: "same", VIEWER_USERNAME: "same" })).toThrow(/differ/);
+    expect(() => loadConfig({ SIM_TICK_MS: "100" })).toThrow(/SIM_TICK_MS/);
+    expect(() =>
+      loadConfig({
+        SOURCE: "live",
+        NODE_ENV: "production",
+        AMI_HOST: "127.0.0.1",
+        AMI_SECRET: "lab",
+      }),
+    ).toThrow(/SESSION_SECRET/);
   });
 });
 
@@ -57,7 +67,19 @@ describe("HTTP API", () => {
     const { app } = await demoApp();
     const health = await app.inject({ method: "GET", url: "/api/health" });
     expect(health.statusCode).toBe(200);
+    expect(health.headers["cache-control"]).toBe("no-store");
     expect(health.json()).toMatchObject({ status: "ok", source: "demo", liveCalls: 4, lowBalance: 3, trunksUp: 3 });
+    const signedIn = await app.inject({
+      method: "POST",
+      url: "/api/login",
+      payload: { username: "admin", password: "span-demo-admin" },
+    });
+    const setCookie = signedIn.headers["set-cookie"];
+    const cookie = Array.isArray(setCookie) ? setCookie.join(";") : String(setCookie);
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("SameSite=Lax");
+    const loggedOut = await app.inject({ method: "POST", url: "/api/logout", cookies: await login(app, "admin", "span-demo-admin") });
+    expect(String(loggedOut.headers["set-cookie"])).toContain("span.sid=;");
     const hidden = await app.inject({ method: "GET", url: "/api/overview" });
     expect(hidden.statusCode).toBe(401);
     await app.close();

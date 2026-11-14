@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, api } from "../lib/api.js";
 import { clock, money } from "../lib/format.js";
 import { useLive } from "../lib/live.js";
-import { Banner, PageHead, Panel, Pill } from "../components/ui.js";
+import { Banner, EmptyRow, Loading, PageHead, Panel, Pill } from "../components/ui.js";
 import type { Customer, Refill } from "../types.js";
 
 interface CustomersPayload {
@@ -20,14 +20,18 @@ export function Customers() {
   const [description, setDescription] = useState("Counter refill");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     api<CustomersPayload>("/api/customers")
       .then((payload) => {
         setData(payload);
+        setLoadError("");
         setCustomerId((current) => current || payload.customers[0]?.id || "");
       })
-      .catch(() => undefined);
+      .catch((err: unknown) => {
+        setLoadError(err instanceof ApiError ? err.message : "Could not load customers.");
+      });
   }, [snap?.revision]);
 
   async function refill(event: FormEvent) {
@@ -45,7 +49,16 @@ export function Customers() {
     }
   }
 
-  if (!data) return <p className="text-[var(--muted)]">Loading customers…</p>;
+  if (loadError && !data) {
+    return (
+      <div>
+        <PageHead title="Customers" lede="Balances and refills." />
+        <Banner>{loadError}</Banner>
+      </div>
+    );
+  }
+  if (!data) return <Loading label="Loading customers…" />;
+  const readOnly = me.role !== "admin";
 
   return (
     <div>
@@ -60,13 +73,13 @@ export function Customers() {
       ) : null}
       <Panel className="mb-4 p-4">
         <div className="kicker">Refill</div>
-        {me.role !== "admin" ? (
-          <p className="mt-2 text-sm text-[var(--muted)]">This account is read only. Credit is unchanged.</p>
+        {data.customers.length === 0 ? (
+          <p className="mt-2 text-sm text-[var(--muted)]">No customers yet.</p>
         ) : (
           <form className="mt-3 grid gap-3 md:grid-cols-4" onSubmit={(event) => void refill(event)}>
             <label className="field md:col-span-2">
               <span>Customer</span>
-              <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+              <select value={customerId} disabled={readOnly} onChange={(event) => setCustomerId(event.target.value)}>
                 {data.customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name} ({money(customer.credit)})
@@ -76,16 +89,17 @@ export function Customers() {
             </label>
             <label className="field">
               <span>Amount</span>
-              <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" />
+              <input value={amount} disabled={readOnly} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" />
             </label>
             <label className="field">
               <span>Description</span>
-              <input value={description} onChange={(event) => setDescription(event.target.value)} />
+              <input value={description} disabled={readOnly} onChange={(event) => setDescription(event.target.value)} />
             </label>
             <div className="md:col-span-4">
-              <button className="btn btn-primary" type="submit">
+              <button className="btn btn-primary" type="submit" disabled={readOnly || !customerId}>
                 Add credit
               </button>
+              {readOnly ? <p className="mt-2 text-sm text-[var(--muted)]">This account is read only. Credit is unchanged.</p> : null}
             </div>
           </form>
         )}
@@ -105,6 +119,7 @@ export function Customers() {
               </tr>
             </thead>
             <tbody>
+              {data.customers.length === 0 ? <EmptyRow cols={5}>No customers yet.</EmptyRow> : null}
               {data.customers.map((customer) => {
                 const low = customer.active && customer.credit < data.threshold;
                 return (
@@ -134,6 +149,9 @@ export function Customers() {
       </Panel>
       <Panel className="mt-4 p-4">
         <div className="kicker">Recent refills</div>
+        {data.refills.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--muted)]">No refills yet.</p>
+        ) : (
         <ul className="mt-3 space-y-2 text-sm">
           {data.refills.slice(0, 8).map((refill) => (
             <li key={refill.id} className="flex flex-wrap justify-between gap-2">
@@ -146,6 +164,7 @@ export function Customers() {
             </li>
           ))}
         </ul>
+        )}
       </Panel>
     </div>
   );

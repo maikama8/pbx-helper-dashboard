@@ -88,6 +88,11 @@ describe("FreePBX GraphQL", () => {
     });
     expect(trunks[0].name).toBe("telnyx-us");
     expect(trunks[0].host).toBe("sip.telnyx.com");
+    expect(trunks[0].status).toBe("unregistered");
+    const disabled = mapFreePbxTrunks({
+      data: { fetchAllTrunks: { trunks: [{ trunkid: "9", name: "old-trunk", disabled: "on" }] } },
+    });
+    expect(disabled[0]).toMatchObject({ status: "unregistered", detail: "Disabled in FreePBX" });
   });
 
   it("sends the bearer token and surfaces GraphQL errors", async () => {
@@ -202,6 +207,26 @@ describe("inventory overlay", () => {
     );
     expect(trunks[0].provider).toBe("Telnyx");
     expect(trunks[0].status).toBe("rejected");
-    expect(overlayExtensions([], [{ id: "1001", extension: "1001", name: "1001", technology: "pjsip", context: "", callerId: "1001", account: null, status: "online", address: null, userAgent: null, codec: "", source: "asterisk" }])).toHaveLength(1);
+    const observed = {
+      id: "1001",
+      extension: "1001",
+      name: "1001",
+      technology: "pjsip" as const,
+      context: "",
+      callerId: "1001",
+      account: null,
+      status: "online" as const,
+      address: "203.0.113.21",
+      userAgent: null,
+      codec: "",
+      source: "asterisk" as const,
+    };
+    const merged = overlayExtensions(
+      [{ ...observed, name: "Adaeze", status: "unavailable", address: null, source: "freepbx" }],
+      [observed, { ...observed, id: "1009", extension: "1009", name: "1009" }],
+    );
+    expect(merged).toHaveLength(2);
+    expect(merged[0]).toMatchObject({ name: "Adaeze", status: "online", address: "203.0.113.21", source: "freepbx" });
+    expect(merged[1].extension).toBe("1009");
   });
 });

@@ -1,9 +1,10 @@
 import type { Config } from "../../config.js";
-import type { Customer } from "../../domain/types.js";
+import type { Cdr, CelEvent, Customer, Extension, LiveCall, QueueStat, Rate, Refill, Trunk } from "../../domain/types.js";
 import type { ActionResult, TelephonyConnector } from "../types.js";
 import { openingState, type DemoData } from "./opening.js";
 import { hangupCall, refillCustomer, stepDemo } from "./step.js";
 
+/** Deterministic generator in [0, 1). The same seed yields the same sequence. */
 export function mulberry32(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
@@ -21,6 +22,10 @@ export interface DemoOptions {
   now?: () => Date;
 }
 
+/**
+ * Seeded floor used when `SOURCE=demo`. The opening rows do not depend on the seed.
+ * The seed only drives later ticks. A tick of 0 leaves the floor frozen.
+ */
 export class DemoConnector implements TelephonyConnector {
   readonly source = "demo" as const;
   private data: DemoData;
@@ -75,36 +80,36 @@ export class DemoConnector implements TelephonyConnector {
     return () => this.listeners.delete(listener);
   }
 
-  getCalls() {
+  getCalls(): LiveCall[] {
     return this.data.calls;
   }
-  getTrunks() {
+  getTrunks(): Trunk[] {
     return this.data.trunks;
   }
-  getExtensions() {
+  getExtensions(): Extension[] {
     return this.data.extensions;
   }
-  getQueues() {
+  getQueues(): QueueStat[] {
     return this.data.queues;
   }
-  getCustomers() {
+  getCustomers(): Customer[] {
     return [...this.data.customers].sort((a, b) => a.credit - b.credit);
   }
-  getRefills() {
+  getRefills(): Refill[] {
     return this.data.refills;
   }
-  getRates() {
+  getRates(): Rate[] {
     return this.data.rates;
   }
-  getCdrs() {
+  getCdrs(): Cdr[] {
     return this.data.cdrs;
   }
-  getCel() {
+  getCel(): CelEvent[] {
     return this.data.cel;
   }
 
-  /** Test seam. Production ticks draw from the seeded generator. */
-  debugStep(roll: number, at = this.clock()): void {
+  /** Advance one tick with a chosen roll. The timer draws from the seeded generator instead. */
+  step(roll: number, at = this.clock()): void {
     this.data = stepDemo(this.data, roll, at);
     this.publish();
   }

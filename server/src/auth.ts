@@ -11,18 +11,21 @@ export interface Session {
 
 export const SESSION_COOKIE = "span.sid";
 
+/** Compare two passwords without leaking which one was longer. */
 export function passwordsMatch(input: string, expected: string): boolean {
   const left = crypto.createHash("sha256").update(input).digest();
   const right = crypto.createHash("sha256").update(expected).digest();
   return crypto.timingSafeEqual(left, right);
 }
 
+/** HMAC-signed session token. The payload is readable; the signature is the secret. */
 export function seal(session: Session, secret: string): string {
   const body = Buffer.from(JSON.stringify(session)).toString("base64url");
   const sig = crypto.createHmac("sha256", secret).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
+/** The session when the signature matches and `exp` is still in the future. */
 export function openSession(token: string, secret: string, now = Date.now()): Session | null {
   const dot = token.lastIndexOf(".");
   if (dot <= 0) return null;
@@ -42,6 +45,7 @@ export function openSession(token: string, secret: string, now = Date.now()): Se
   }
 }
 
+/** A twelve-hour session for a matching admin or viewer account. */
 export function authenticate(username: string, password: string, config: Config): Session | null {
   const accounts = [
     { username: config.adminUsername, password: config.adminPassword, role: "admin" as const },

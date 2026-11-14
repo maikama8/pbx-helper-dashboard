@@ -9,6 +9,7 @@ export function ariBasicAuth(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
 
+/** Asterisk REST hangup. Used ahead of AMI when `ARI_URL` is set. */
 export class AriClient {
   constructor(
     private readonly config: AriConfig,

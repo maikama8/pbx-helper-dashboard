@@ -2,6 +2,7 @@ import type { CdrMysqlConfig } from "../../config.js";
 import type { Cdr, CelEvent, Rate } from "../../domain/types.js";
 import { cdrQuery, celQuery, mapMysqlCdr, mapMysqlCel, type MysqlCdrRow, type MysqlCelRow } from "./sql.js";
 
+/** Read `cdr` and `cel` with a short-lived connection. The SQL is parameterised in `sql.ts`. */
 export async function loadMysqlCdr(
   config: CdrMysqlConfig,
   rates: readonly Rate[],

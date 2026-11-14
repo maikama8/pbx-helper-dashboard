@@ -1,16 +1,19 @@
 # Span
 
 [![CI](https://github.com/maikama8/pbx-helper-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/maikama8/pbx-helper-dashboard/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-A billing desk and a PBX rarely agree on what is happening right now. Span is one board for both: who is on a channel, which trunk is actually registered, which MagnusBilling customer is about to run out of credit, and what today's attempts cost against the rate you bought.
+**One board for the billing desk and the PBX.**
 
-It is a portfolio project. The default connector is a seeded demo, so the API, the tests, the UI, and Docker start with no PBX and no billing server. Live mode speaks Asterisk AMI, ARI for hangup, the MagnusBilling REST API, FreePBX GraphQL, and a read-only MySQL user on `asteriskcdrdb`.
+Span shows who is on a channel, which trunk is actually registered, which MagnusBilling customer is about to run out of credit, and what today's attempts cost against the rate you bought. The default connector is a seeded demo, so the API, the tests, the UI, and Docker start with no PBX and no billing server. Live mode speaks Asterisk AMI, ARI for hangup, the MagnusBilling REST API, FreePBX GraphQL, and a read-only MySQL user on `asteriskcdrdb`.
 
 ![Span overview in the dark theme, demo floor](docs/images/overview-dark.png)
 
 ![The same opening floor in the light theme](docs/images/overview-light.png)
 
-The screenshots are the opening scene, taken with `SIM_TICK_MS=0` so a tick does not move a call while the picture is taken. Four channels are up, one of them still ringing. ASR is 63.6% on 22 attempts, ACD is 2m 08s, three of five trunks are registered, and three customers are under the $5 line. Nothing in those pictures was drawn by hand: it is the state the process serves.
+The screenshots are the opening scene, taken with `SIM_TICK_MS=0` so a tick does not move a call while the picture is taken. Four channels are up, one of them still ringing. ASR is 63.6% on 22 attempts, ACD is 2m 08s, three of five trunks are registered, and three customers are under the $5 line.
 
 ## Features
 
@@ -24,50 +27,9 @@ The screenshots are the opening scene, taken with `SIM_TICK_MS=0` so a tick does
 - Demo mode with a seeded day and a small live tick over WebSocket.
 - Admin and read-only logins. Session cookie. Docker Compose, plus an optional Asterisk lab container.
 
-## Tech stack
+Stack: Node.js 22, [Fastify](https://fastify.dev/) 5, React 19, Vite, Tailwind, Vitest.
 
-Node 22, [Fastify](https://fastify.dev/) 5, and a React 19 UI built with Vite and Tailwind.
-
-A helper like this holds a long-lived AMI socket and fans snapshots out to browsers. That wants one process, not a serverless function per request, so the UI is a static bundle served by the same Fastify server that owns the connectors. Next.js would split the socket, the session, and the pages across a different runtime for no gain here. The shape matches the wallboard in [voip-call-center-dashboard-modern](https://github.com/maikama8/voip-call-center-dashboard-modern): a connector interface, pure billing math, and a board that does not know which side produced the rows.
-
-Tests are Vitest. Lint is ESLint.
-
-## Architecture
-
-```mermaid
-flowchart TD
-  ami[Asterisk AMI]
-  ari[Asterisk ARI]
-  mag[MagnusBilling REST]
-  fbx[FreePBX GraphQL]
-  db[(asteriskcdrdb CDR and CEL)]
-  demo[Demo connector]
-  conn[TelephonyConnector]
-  rate[Prefix rating]
-  math[ASR, ACD, margin]
-  api[Fastify]
-  ws[WebSocket /ws]
-  ui[React board]
-
-  ami --> conn
-  ari --> conn
-  mag --> conn
-  fbx --> conn
-  db --> conn
-  demo --> conn
-  conn --> rate
-  rate --> math
-  math --> api
-  api --> ws
-  api --> ui
-  ws --> ui
-```
-
-Both connectors implement the same surface: calls, trunks, extensions, queues, customers, refills, rates, CDRs, CEL, hangup, refill. Routes and the socket only see that surface. Rating and the ratios are pure functions of the rows, so the demo day and a MySQL row go through one formula.
-
-Hangup and refill are the only writes. The SIP and dialplan tools return text. They do not reload Asterisk.
-
-## Getting started
+## Quick start
 
 Requires Node.js 22.
 
@@ -112,20 +74,6 @@ docker compose --profile lab up --build
 
 The lab manager secret is `span-lab-ami` in [deploy/asterisk/manager.conf](deploy/asterisk/manager.conf). It is a local experiment, not a production user.
 
-## Live connectors
-
-Set `SOURCE=live` and fill in the connectors you actually have. At least one of AMI, Magnus, FreePBX, or CDR MySQL is required, or the process refuses to start. A connector that is configured and then fails does not take the board down: `/api/health` becomes `degraded` and the warning stays on the overview.
-
-| System | What Span reads | What Span writes | Setup |
-| --- | --- | --- | --- |
-| Asterisk AMI | Channels, peers, registry, queues | `Hangup`, and only if ARI is not configured | [docs/asterisk-ami.md](docs/asterisk-ami.md) |
-| Asterisk ARI | Nothing | `DELETE` the channel | [docs/asterisk-ami.md](docs/asterisk-ami.md) |
-| MagnusBilling | Customers, SIP users, trunks, rates, CDRs | `refill/save` | [docs/magnusbilling.md](docs/magnusbilling.md) |
-| FreePBX GraphQL | Extensions and trunks | Nothing | [docs/freepbx.md](docs/freepbx.md) |
-| `asteriskcdrdb` | `cdr` and `cel`, `SELECT` only | Nothing | [docs/freepbx.md](docs/freepbx.md) |
-
-AMI registration replaces the status on a trunk whose name matches. Magnus remains the billing source when both Magnus CDR and MySQL are configured, because Magnus has the price and MySQL has the channel events.
-
 ## Configuration
 
 Settings are read from the environment and from a `.env` file in the repo root. Existing environment variables win. See [.env.example](.env.example).
@@ -153,6 +101,57 @@ Settings are read from the environment and from a `.env` file in the repo root. 
 | `CDR_HOST`, `CDR_PORT`, `CDR_USER`, `CDR_PASSWORD`, `CDR_DATABASE` | host empty, database `asteriskcdrdb` | Read-only CDR user |
 
 `SOURCE=live` with a demo session secret and `NODE_ENV=production` refuses to boot. An unknown `SOURCE` or a timezone that is not an IANA name does the same.
+
+## Live connectors
+
+Set `SOURCE=live` and fill in the connectors you actually have. At least one of AMI, Magnus, FreePBX, or CDR MySQL is required, or the process refuses to start. A connector that is configured and then fails does not take the board down: `/api/health` becomes `degraded` and the warning stays on the overview.
+
+| System | What Span reads | What Span writes | Setup |
+| --- | --- | --- | --- |
+| Asterisk AMI | Channels, peers, registry, queues | `Hangup`, and only if ARI is not configured | [docs/asterisk-ami.md](docs/asterisk-ami.md) |
+| Asterisk ARI | Nothing | `DELETE` the channel | [docs/asterisk-ami.md](docs/asterisk-ami.md) |
+| MagnusBilling | Customers, SIP users, trunks, rates, CDRs | `refill/save` | [docs/magnusbilling.md](docs/magnusbilling.md) |
+| FreePBX GraphQL | Extensions and trunks | Nothing | [docs/freepbx.md](docs/freepbx.md) |
+| `asteriskcdrdb` | `cdr` and `cel`, `SELECT` only | Nothing | [docs/freepbx.md](docs/freepbx.md) |
+
+AMI registration replaces the status on a trunk whose name matches. Magnus remains the billing source when both Magnus CDR and MySQL are configured, because Magnus has the price and MySQL has the channel events.
+
+## Architecture
+
+A helper like this holds a long-lived AMI socket and fans snapshots out to browsers. That wants one process, not a serverless function per request, so the UI is a static bundle served by the same Fastify server that owns the connectors.
+
+```mermaid
+flowchart TD
+  ami[Asterisk AMI]
+  ari[Asterisk ARI]
+  mag[MagnusBilling REST]
+  fbx[FreePBX GraphQL]
+  db[(asteriskcdrdb CDR and CEL)]
+  demo[Demo connector]
+  conn[TelephonyConnector]
+  rate[Prefix rating]
+  math[ASR, ACD, margin]
+  api[Fastify]
+  ws[WebSocket /ws]
+  ui[React board]
+
+  ami --> conn
+  ari --> conn
+  mag --> conn
+  fbx --> conn
+  db --> conn
+  demo --> conn
+  conn --> rate
+  rate --> math
+  math --> api
+  api --> ws
+  api --> ui
+  ws --> ui
+```
+
+Both connectors implement the same surface: calls, trunks, extensions, queues, customers, refills, rates, CDRs, CEL, hangup, refill. Routes and the socket only see that surface. Rating and the ratios are pure functions of the rows, so the demo day and a MySQL row go through one formula.
+
+Hangup and refill are the only writes. The SIP and dialplan tools return text. They do not reload Asterisk.
 
 ## How the numbers are computed
 
@@ -197,69 +196,34 @@ Queue service level is Asterisk's `ServicelevelPerf`, labelled as the PBX report
 
 A hangup of a call that was answered writes a CDR from `answeredAt`. The opening Nigeria channel has been up for 252 seconds and rates at sell 0.336 if you hang it up on the frozen clock. A call that never answered is `NO ANSWER` with zero cost.
 
-## API
+## HTTP API
 
 All `/api` routes except health and login require the session cookie. Mutations require the admin role and answer `403` with `read_only` for the viewer.
 
-### `GET /api/health`
-
-```bash
-curl -s http://127.0.0.1:8080/api/health
-```
-
-```json
-{
-  "status": "ok",
-  "source": "demo",
-  "timezone": "UTC",
-  "liveCalls": 4,
-  "trunks": 5,
-  "trunksUp": 3,
-  "customers": 8,
-  "lowBalance": 3,
-  "warnings": []
-}
-```
-
-`status` is `degraded` when a live connector's last refresh failed. The process is still serving the last good rows.
-
-### `POST /api/login` and `POST /api/logout`
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/api/health` | Public. `degraded` when a live connector's last refresh failed. |
+| `POST` | `/api/login`, `/api/logout` | Cookie `span.sid`, HttpOnly, SameSite=Lax, twelve hours. Eight failures from one address in ten minutes return `429`. |
+| `GET` | `/api/me` | Username, role, and source. |
+| `GET` | `/api/snapshot`, `GET /ws` | The document the board paints. The socket sends one on connect and another after every demo tick or AMI event. |
+| `POST` | `/api/calls/:id/hangup` | Admin. `404` if the channel is gone. `409` when neither AMI nor ARI is configured. `502` when the PBX refuses. |
+| `POST` | `/api/customers/:id/refill` | Admin. Amount from 0.01 to 100000, at most two decimal places. |
+| `GET` | `/api/cdr`, `/api/cdr/export` | Filters: `from`, `to` (`YYYY-MM-DD` in `TIMEZONE`), `account`, `disposition`, `destination`, `q`. Export is CSV, capped at 5000 rows. |
+| | `/api/tools/*` | `providers`, `sip`, `dialplan`, `checklist`, `nat`. Text only. |
 
 ```bash
 curl -s -c /tmp/span.cj -X POST http://127.0.0.1:8080/api/login \
   -H 'content-type: application/json' \
   -d '{"username":"admin","password":"span-demo-admin"}'
-```
 
-The cookie is `span.sid`, HttpOnly, SameSite=Lax, twelve hours. Eight failures from one address in ten minutes return `429`.
-
-### `GET /api/snapshot` and `GET /ws`
-
-The snapshot is the document the board paints: overview, calls, trunks, extensions, queues. The socket sends one on connect and another after every demo tick or AMI event. Customers, CDRs, and tools stay on their own routes.
-
-### `POST /api/calls/:id/hangup`
-
-Admin only. `404` if the channel is already gone. `409` in live mode when neither AMI nor ARI is configured. `502` when the PBX refuses.
-
-### `POST /api/customers/:id/refill`
-
-```bash
 curl -s -b /tmp/span.cj -X POST http://127.0.0.1:8080/api/customers/2/refill \
   -H 'content-type: application/json' \
   -d '{"amount":10,"description":"cash desk"}'
 ```
 
-Amount is from 0.01 to 100000 with at most two decimal places. Harbor Clinic opens at 1.20, so this returns credit 11.20 and the account leaves the low-balance list. In live mode this calls Magnus `refill/save` and then re-reads the customer.
+Harbor Clinic opens at 1.20, so the refill returns credit 11.20 and the account leaves the low-balance list. In live mode this calls Magnus `refill/save` and then re-reads the customer.
 
-### `GET /api/cdr` and `GET /api/cdr/export`
-
-Filters: `from`, `to` (`YYYY-MM-DD` in `TIMEZONE`), `account`, `disposition`, `destination`, `q`. The JSON includes the analytics for the filtered rows, not only the page, plus recent CEL. Export is `text/csv` for the same filter, capped at 5000 rows. The viewer may export. Export does not change anything.
-
-### Tools
-
-`GET /api/tools/providers`, `POST /api/tools/sip`, `POST /api/tools/dialplan`, `GET /api/tools/checklist`, `GET /api/tools/nat`.
-
-Trunk names, hosts, DIDs, and extensions are restricted to a token or a digit string so a value cannot close a section and open another. The password is checked for length and for line breaks, then placed in the snippet you asked for. It is not logged. The checklist is things to look at on a PBX you administer. It does not scan a host.
+Trunk names, hosts, DIDs, and extensions in the tools are restricted to a token or a digit string so a value cannot close a section and open another. The password is checked for length and for line breaks, then placed in the snippet you asked for. It is not logged.
 
 ## Project structure
 
@@ -302,9 +266,11 @@ npm run build
 
 GitHub Actions (`.github/workflows/ci.yml`) runs those four on Node 22 for pushes to `main` and for pull requests.
 
-The suite covers the opening ASR, ACD, hour bucket, and Nigeria ranking; prefix rating, including the extension that must not match the United States; CSV quoting; the AMI frame parser and the channel reducer; the Magnus signature and a refill body that does not contain the secret; FreePBX mapping and a GraphQL error; ARI basic auth; parameterised CDR SQL; the demo hangup that rates 252 seconds at 0.336; login, the viewer `403`, refill validation, CSV export, and the login rate limit. No test dials a PBX or a billing server.
+The suite covers the opening ASR, ACD, hour bucket, and Nigeria ranking; prefix rating, including the extension that must not match the United States; CSV quoting; the AMI frame parser, a scripted AMI session, and the channel reducer; the Magnus signature and a refill body that does not contain the secret; FreePBX mapping and a GraphQL error; ARI basic auth and the AMI hangup fallback; parameterised CDR SQL; the demo hangup that rates 252 seconds at 0.336; login, the viewer `403`, refill validation, CSV export, the login rate limit, and a tampered session cookie. No test dials a PBX or a billing server.
 
 ## Security
+
+Operational notes for a host you administer. To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 - Demo passwords and `SESSION_SECRET` are for a checkout. `SOURCE=live` in production refuses the demo session secret. Set `COOKIE_SECURE=1` behind HTTPS.
 - The viewer role cannot hang up or refill. The tools do not write to the switch.
@@ -323,6 +289,12 @@ The suite covers the opening ASR, ACD, hour bucket, and Nigeria ranking; prefix 
 - Trunk failover notes: which route actually took the call, from `dstchannel`, next to the rate.
 - OAuth in front of the session cookie for a shared NOC.
 - A read-only Prometheus scrape of ASR, trunk state, and low-balance count.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The short version: Node 22, `npm test` before a pull request, and conventional commit messages. The opening-day figures in this README are asserted by the tests. If you change a seeded call, change both.
+
+Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before participating.
 
 ## Author
 

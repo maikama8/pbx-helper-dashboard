@@ -89,7 +89,7 @@ export function mapFreePbxTrunks(payload: unknown): Trunk[] {
         provider: row.name || "FreePBX trunk",
         technology: tech.includes("iax") ? "iax2" as const : tech === "sip" ? "sip" as const : "pjsip" as const,
         host: row.channelid || "",
-        status: disabled ? "unregistered" as const : "unregistered" as const,
+        status: "unregistered" as const,
         rttMs: null,
         channelsInUse: 0,
         maxChannels: 0,
@@ -101,6 +101,7 @@ export function mapFreePbxTrunks(payload: unknown): Trunk[] {
     });
 }
 
+/** FreePBX GraphQL client. The queries ask for inventory and do not ask for SIP secrets. */
 export class FreePbxClient {
   constructor(
     private readonly config: FreePbxConfig,

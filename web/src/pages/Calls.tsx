@@ -2,21 +2,15 @@ import { useState } from "react";
 import { ApiError, api } from "../lib/api.js";
 import { elapsed, useNow } from "../lib/format.js";
 import { useLive } from "../lib/live.js";
-import { Modal, PageHead, Panel, Pill } from "../components/ui.js";
+import { callTone, EmptyRow, Loading, Modal, PageHead, Panel, Pill } from "../components/ui.js";
 import type { LiveCall } from "../types.js";
-
-function stateTone(state: LiveCall["state"]): "ok" | "warn" | "info" {
-  if (state === "up") return "ok";
-  if (state === "ringing") return "warn";
-  return "info";
-}
 
 export function Calls() {
   const { snap, me } = useLive();
   const now = useNow();
   const [pending, setPending] = useState<LiveCall | null>(null);
   const [error, setError] = useState("");
-  const calls = snap?.calls ?? [];
+  const calls = snap?.calls;
 
   async function hangup() {
     if (!pending) return;
@@ -32,6 +26,9 @@ export function Calls() {
   return (
     <div>
       <PageHead title="Live calls" lede="Hangup sends ARI DELETE when ARI is configured, otherwise AMI Action Hangup. A viewer cannot press it." />
+      {!calls ? (
+        <Loading label="Loading channels…" />
+      ) : (
       <Panel>
         <div className="table-wrap">
           <table className="data">
@@ -58,7 +55,7 @@ export function Calls() {
                   <td className="num">{call.destination}</td>
                   <td className="capitalize">{call.direction}</td>
                   <td>
-                    <Pill tone={stateTone(call.state)}>{call.state}</Pill>
+                    <Pill tone={callTone(call.state)}>{call.state}</Pill>
                   </td>
                   <td className="num">{elapsed(call.answeredAt ?? call.startedAt, now)}</td>
                   <td>{call.trunk ?? "—"}</td>
@@ -71,17 +68,12 @@ export function Calls() {
                   </td>
                 </tr>
               ))}
-              {calls.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-[var(--muted)]">
-                    No channels are up.
-                  </td>
-                </tr>
-              ) : null}
+              {calls.length === 0 ? <EmptyRow cols={9}>No channels are up.</EmptyRow> : null}
             </tbody>
           </table>
         </div>
       </Panel>
+      )}
       {pending ? (
         <Modal title="Hang up this channel?" onClose={() => setPending(null)}>
           <p>

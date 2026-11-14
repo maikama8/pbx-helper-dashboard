@@ -1,0 +1,19 @@
+name: Feature request
+description: A change that would make Span more useful on a real switch.
+title: "feat: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are doing on the PBX or the billing desk that Span does not cover.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would like the board to show or the API to do. Mention if it is demo-only, live-only, or both.
+    validations:
+      required: true

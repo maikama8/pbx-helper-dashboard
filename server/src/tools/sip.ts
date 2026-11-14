@@ -93,10 +93,16 @@ function secret(value: string): string {
   return value;
 }
 
+function requireFormat(value: string): SipFormat {
+  if (value === "pjsip" || value === "chan_sip") return value;
+  throw new Error("Format must be pjsip or chan_sip");
+}
+
+/** A PJSIP or chan_sip trunk snippet. Names are tokens, so a value cannot open a second section. */
 export function renderSip(input: SipInput): { filename: string; text: string; note: string } {
   const preset = PROVIDERS.find((row) => row.id === input.provider);
   if (!preset) throw new Error("Unknown provider");
-  const format: SipFormat = input.format === "chan_sip" ? "chan_sip" : input.format === "pjsip" ? "pjsip" : (() => { throw new Error("Format must be pjsip or chan_sip"); })();
+  const format = requireFormat(input.format);
   const name = token(input.name, "Trunk name");
   const username = token(input.username, "Username");
   const password = secret(input.password);

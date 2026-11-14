@@ -48,6 +48,7 @@ export function Login() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
+            autoFocus
             required
           />
         </label>
