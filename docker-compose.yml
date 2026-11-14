@@ -1,0 +1,59 @@
+services:
+  span:
+    build: .
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      SOURCE: ${SOURCE:-demo}
+      HOST: 0.0.0.0
+      PORT: 8080
+      TIMEZONE: ${TIMEZONE:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WEB_DIST: /app/web/dist
+      SESSION_SECRET: ${SESSION_SECRET:-span-dev-secret-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-span-demo-admin}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-viewer}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-span-demo-viewer}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      LOW_BALANCE: ${LOW_BALANCE:-5}
+      SIM_TICK_MS: ${SIM_TICK_MS:-1500}
+      SIM_SEED: ${SIM_SEED:-20261114}
+      AMI_HOST: ${AMI_HOST:-}
+      AMI_PORT: ${AMI_PORT:-5038}
+      AMI_USERNAME: ${AMI_USERNAME:-span}
+      AMI_SECRET: ${AMI_SECRET:-}
+      AMI_RECONNECT_MS: ${AMI_RECONNECT_MS:-5000}
+      ARI_URL: ${ARI_URL:-}
+      ARI_USERNAME: ${ARI_USERNAME:-}
+      ARI_PASSWORD: ${ARI_PASSWORD:-}
+      MAGNUS_URL: ${MAGNUS_URL:-}
+      MAGNUS_API_KEY: ${MAGNUS_API_KEY:-}
+      MAGNUS_API_SECRET: ${MAGNUS_API_SECRET:-}
+      FREEPBX_GRAPHQL_URL: ${FREEPBX_GRAPHQL_URL:-}
+      FREEPBX_TOKEN: ${FREEPBX_TOKEN:-}
+      CDR_HOST: ${CDR_HOST:-}
+      CDR_PORT: ${CDR_PORT:-3306}
+      CDR_USER: ${CDR_USER:-}
+      CDR_PASSWORD: ${CDR_PASSWORD:-}
+      CDR_DATABASE: ${CDR_DATABASE:-asteriskcdrdb}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  asterisk:
+    profiles: ["lab"]
+    image: andrius/asterisk:20
+    ports:
+      - "127.0.0.1:5038:5038"
+    volumes:
+      - ./deploy/asterisk/manager.conf:/etc/asterisk/manager.conf:ro
